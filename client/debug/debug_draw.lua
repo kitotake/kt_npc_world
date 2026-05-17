@@ -18,11 +18,11 @@ CreateThread(function()
 
                         if onScreen then
                             local stateColor = {
-                                calm      = {0,   255, 100},
-                                scared    = {255, 200, 0  },
-                                panicked  = {255, 80,  0  },
+                                calm       = {0,   255, 100},
+                                scared     = {255, 200, 0  },
+                                panicked   = {255, 80,  0  },
                                 aggressive = {255, 0,   0  },
-                                fleeing   = {200, 0,   255},
+                                fleeing    = {200, 0,   255},
                             }
                             local col = stateColor[npc.state] or {255, 255, 255}
 

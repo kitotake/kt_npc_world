@@ -3,9 +3,9 @@
 DrivingAI = {}
 
 local drivingStyles = {
-    normal   = 786603,
+    normal     = 786603,
     aggressive = 1074528293,
-    cautious = 524860,
+    cautious   = 524860,
 }
 
 function DrivingAI.SetStyle(npc, style)

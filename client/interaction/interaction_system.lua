@@ -4,21 +4,21 @@ InteractionSystem = {}
 
 local interactionMap = {
     civil = {
-        calm    = { "Parler", "Demander une information" },
-        scared  = { "Rassurer" },
+        calm     = { "Parler", "Demander une information" },
+        scared   = { "Rassurer" },
         panicked = {},
     },
     guard = {
-        calm    = { "Parler", "Demander l'accès" },
-        scared  = {},
-        panicked = {},
+        calm       = { "Parler", "Demander l'accès" },
+        scared     = {},
+        panicked   = {},
         aggressive = { "Se rendre" },
     },
     dealer = {
-        calm    = { "Parler", "Négocier" },
+        calm = { "Parler", "Négocier" },
     },
     gang = {
-        calm    = { "Parler" },
+        calm       = { "Parler" },
         aggressive = {},
     },
 }

@@ -13,19 +13,32 @@ function SpawnNPC(model, coords, class)
 
     SetModelAsNoLongerNeeded(hash)
 
-    return RegisterEntity(ped, { class = class })
+    local npc = RegisterEntity(ped, { class = class })
+
+    -- v1.1 : notifie GroupAI de l'enregistrement
+    if npc then
+        TriggerEvent("npc:registered", npc)
+    end
+
+    return npc
 end
 
-function SpawnNPCWithJob(model, coords, class, job, routeId)
+function SpawnNPCWithJob(model, coords, class, job, routeId, groupId)
     local npc = SpawnNPC(model, coords, class)
     if not npc then return nil end
 
     npc.job     = job or "none"
     npc.routeId = routeId or nil
+    npc.group   = groupId or nil
     npc.waypointIndex = 1
 
     if job == "patrol" and routeId then
         TriggerEvent("npc:start_patrol", npc.id)
+    end
+
+    -- Enregistre dans le groupe si défini
+    if groupId then
+        GroupAI.Register(npc)
     end
 
     return npc

@@ -1,166 +1,97 @@
 -- client/systems/skin_system.lua
--- Applique un skin visuel sur les peds freemode selon leur classe
--- + support SQL override (skin DB)
+-- v1.3 : uniquement mp_m_freemode_01 & mp_f_freemode_01
+-- Chaque NPC reçoit un skin aléatoire parmi un pool limité mais varié
+-- pour éviter que tout le monde soit habillé pareil sans non plus
+-- avoir 500 combinaisons incontrôlables.
 
 SkinSystem = {}
 
+-- Seuls ces deux modèles sont utilisés dans tout le projet
+local FREEMODE_MODELS = {
+    [`mp_m_freemode_01`] = true,
+    [`mp_f_freemode_01`] = true,
+}
+
+local function IsFreemode(modelHash)
+    return FREEMODE_MODELS[modelHash] == true
+end
+
+local function GetGender(modelHash)
+    return modelHash == `mp_f_freemode_01` and "female" or "male"
+end
+
 -- ==============================================================
--- SKINS CONFIG
+-- POOL DE SKINS
+-- Principe : on sépare les pièces en catégories indépendantes
+-- (hauts, bas, chaussures) et on les combine aléatoirement.
+-- Ça donne beaucoup de variété avec peu de valeurs.
+-- textureRange = {min, max} résolu au spawn.
 -- ==============================================================
 
-local Skins = {
-
-    civil = {
-        male = {
-            {
-                components = {
-                    [4]  = { drawable = 61,  texture = math.random(0, 5) },
-                    [6]  = { drawable = 24,  texture = 0 },
-                    [8]  = { drawable = 57,  texture = math.random(0, 8) },
-                    [11] = { drawable = 0,   texture = 0 },
-                },
-                props = {
-                    [0] = nil,
-                },
-            },
-            {
-                components = {
-                    [4]  = { drawable = 21,  texture = math.random(0, 3) },
-                    [6]  = { drawable = 25,  texture = 0 },
-                    [8]  = { drawable = 0,   texture = 0 },
-                    [11] = { drawable = 55,  texture = math.random(0, 4) },
-                },
-                props = {},
-            },
+local SkinPool = {
+    male = {
+        -- Hauts (composant 11 = torso/haut du corps)
+        tops = {
+            { drawable = 0,  textureRange = {0, 3}  }, -- tshirt basique
+            { drawable = 4,  textureRange = {0, 5}  }, -- chemise
+            { drawable = 14, textureRange = {0, 4}  }, -- hoodie
+            { drawable = 21, textureRange = {0, 3}  }, -- veste légère
+            { drawable = 55, textureRange = {0, 5}  }, -- veste casual
+            { drawable = 61, textureRange = {0, 5}  }, -- blouson
         },
-        female = {
-            {
-                components = {
-                    [4]  = { drawable = 34,  texture = math.random(0, 5) },
-                    [6]  = { drawable = 35,  texture = 0 },
-                    [8]  = { drawable = 5,   texture = math.random(0, 6) },
-                    [11] = { drawable = 0,   texture = 0 },
-                },
-                props = {},
-            },
+        -- Bas (composant 4 = jambes)
+        bottoms = {
+            { drawable = 0,  textureRange = {0, 6}  }, -- jean basique
+            { drawable = 4,  textureRange = {0, 4}  }, -- chino
+            { drawable = 14, textureRange = {0, 3}  }, -- cargo
+            { drawable = 24, textureRange = {0, 4}  }, -- slim
+            { drawable = 36, textureRange = {0, 3}  }, -- short
         },
-    },
-
-    guard = {
-        male = {
-            {
-                components = {
-                    [3]  = { drawable = 4,  texture = 0 },
-                    [4]  = { drawable = 24, texture = 0 },
-                    [6]  = { drawable = 25, texture = 0 },
-                    [8]  = { drawable = 58, texture = 0 },
-                    [11] = { drawable = 55, texture = 0 },
-                },
-                props = {
-                    [0] = { drawable = 45, texture = 0 },
-                },
-            },
+        -- Chaussures (composant 6)
+        shoes = {
+            { drawable = 1,  texture = 0 }, -- baskets blanches
+            { drawable = 10, texture = 0 }, -- sneakers
+            { drawable = 24, texture = 0 }, -- boots
+            { drawable = 25, texture = 0 }, -- chaussures casual
+            { drawable = 34, texture = 0 }, -- chaussures de ville
         },
-        female = {
-            {
-                components = {
-                    [4]  = { drawable = 24, texture = 0 },
-                    [6]  = { drawable = 25, texture = 0 },
-                    [8]  = { drawable = 58, texture = 0 },
-                    [11] = { drawable = 55, texture = 0 },
-                },
-                props = {
-                    [0] = { drawable = 45, texture = 0 },
-                },
-            },
+        -- Accessoires tête (prop 0) — optionnel, 40% de chance
+        hats = {
+            nil,                                          -- pas de chapeau
+            nil,                                          -- pas de chapeau (poids double)
+            { drawable = 1,  textureRange = {0, 4} },    -- casquette
+            { drawable = 11, textureRange = {0, 3} },    -- bonnet
+            { drawable = 45, textureRange = {0, 2} },    -- bob
         },
     },
-
-    gang = {
-        male = {
-            {
-                components = {
-                    [4]  = { drawable = 21, texture = 1 },
-                    [6]  = { drawable = 24, texture = 0 },
-                    [8]  = { drawable = 15, texture = math.random(0, 3) },
-                    [11] = { drawable = 15, texture = math.random(0, 5) },
-                },
-                props = {
-                    [0] = { drawable = 11, texture = 0 },
-                },
-            },
-            {
-                components = {
-                    [4]  = { drawable = 61, texture = 3 },
-                    [6]  = { drawable = 36, texture = 0 },
-                    [8]  = { drawable = 0,  texture = 0 },
-                    [11] = { drawable = 55, texture = 5 },
-                },
-                props = {
-                    [0] = { drawable = 11, texture = 1 },
-                },
-            },
+    female = {
+        tops = {
+            { drawable = 0,  textureRange = {0, 5}  }, -- débardeur
+            { drawable = 5,  textureRange = {0, 4}  }, -- top court
+            { drawable = 10, textureRange = {0, 4}  }, -- chemisier
+            { drawable = 25, textureRange = {0, 3}  }, -- pull
+            { drawable = 34, textureRange = {0, 5}  }, -- veste
+            { drawable = 48, textureRange = {0, 4}  }, -- hoodie
         },
-        female = {
-            {
-                components = {
-                    [4]  = { drawable = 3, texture = math.random(0, 4) },
-                    [6]  = { drawable = 36, texture = 0 },
-                    [8]  = { drawable = 5, texture = 3 },
-                    [11] = { drawable = 15, texture = 2 },
-                },
-                props = {},
-            },
+        bottoms = {
+            { drawable = 0,  textureRange = {0, 5}  }, -- jean
+            { drawable = 3,  textureRange = {0, 4}  }, -- short
+            { drawable = 10, textureRange = {0, 3}  }, -- jupe
+            { drawable = 15, textureRange = {0, 4}  }, -- legging
+            { drawable = 34, textureRange = {0, 3}  }, -- pantalon taille haute
         },
-    },
-
-    dealer = {
-        male = {
-            {
-                components = {
-                    [4]  = { drawable = 61, texture = 0 },
-                    [6]  = { drawable = 24, texture = 0 },
-                    [8]  = { drawable = 0,  texture = 0 },
-                    [11] = { drawable = 249, texture = 0 },
-                },
-                props = {},
-            },
+        shoes = {
+            { drawable = 1,  texture = 0 }, -- baskets
+            { drawable = 3,  texture = 0 }, -- sandales
+            { drawable = 10, texture = 0 }, -- boots
+            { drawable = 20, texture = 0 }, -- chaussures plates
+            { drawable = 27, texture = 0 }, -- sneakers
         },
-        female = {
-            {
-                components = {
-                    [4]  = { drawable = 34, texture = 0 },
-                    [6]  = { drawable = 35, texture = 0 },
-                    [8]  = { drawable = 5,  texture = 0 },
-                    [11] = { drawable = 249, texture = 0 },
-                },
-                props = {},
-            },
-        },
-    },
-
-    medic = {
-        male = {
-            {
-                components = {
-                    [4]  = { drawable = 25, texture = 0 },
-                    [6]  = { drawable = 25, texture = 0 },
-                    [8]  = { drawable = 57, texture = 0 },
-                    [11] = { drawable = 55, texture = 0 },
-                },
-                props = {},
-            },
-        },
-        female = {
-            {
-                components = {
-                    [4]  = { drawable = 25, texture = 0 },
-                    [6]  = { drawable = 25, texture = 0 },
-                    [8]  = { drawable = 57, texture = 0 },
-                    [11] = { drawable = 55, texture = 0 },
-                },
-                props = {},
-            },
+        hats = {
+            nil,
+            nil,
+            { drawable = 1,  textureRange = {0, 4} },
+            { drawable = 11, textureRange = {0, 3} },
         },
     },
 }
@@ -169,51 +100,67 @@ local Skins = {
 -- UTILS
 -- ==============================================================
 
-local function GetGender(model)
-    return model == `mp_f_freemode_01` and "female" or "male"
+local function ResolveComp(comp)
+    if not comp then return nil end
+    return {
+        drawable = comp.drawable,
+        texture  = comp.textureRange
+            and math.random(comp.textureRange[1], comp.textureRange[2])
+            or  comp.texture,
+    }
 end
 
-local function GetSkin(class, gender)
-    local classSkins = Skins[class] or Skins["civil"]
-    local genderSkins = classSkins[gender] or classSkins["male"]
+local function PickRandom(tbl)
+    return tbl[math.random(#tbl)]
+end
 
-    if not genderSkins or #genderSkins == 0 then return nil end
+-- Construit un skin complet en combinant les pièces aléatoirement
+local function BuildSkin(gender)
+    local pool = SkinPool[gender] or SkinPool.male
 
-    return genderSkins[math.random(#genderSkins)]
+    local top    = ResolveComp(PickRandom(pool.tops))
+    local bottom = ResolveComp(PickRandom(pool.bottoms))
+    local shoes  = ResolveComp(PickRandom(pool.shoes))
+    local hat    = ResolveComp(PickRandom(pool.hats)) -- peut être nil
+
+    return {
+        components = {
+            [4]  = bottom,
+            [6]  = shoes,
+            [11] = top,
+        },
+        props = {
+            [0] = hat,
+        },
+    }
 end
 
 -- ==============================================================
--- APPLY SKIN
+-- APPLY
 -- ==============================================================
 
 function SkinSystem.Apply(ped, class, model, dbSkin)
     if not DoesEntityExist(ped) then return end
 
-    local gender = GetGender(model or GetEntityModel(ped))
+    local modelHash = model or GetEntityModel(ped)
+    if not IsFreemode(modelHash) then return end
 
-    -- PRIORITÉ DB
-    local finalClass = dbSkin or class or "civil"
-
-    local skin = GetSkin(finalClass, gender)
-    if not skin then return end
+    local gender = GetGender(modelHash)
+    local skin   = BuildSkin(gender)
 
     SetPedDefaultComponentVariation(ped)
 
-    -- components
-    if skin.components then
-        for compId, comp in pairs(skin.components) do
+    for compId, comp in pairs(skin.components) do
+        if comp then
             SetPedComponentVariation(ped, compId, comp.drawable, comp.texture, 0)
         end
     end
 
-    -- props
-    if skin.props then
-        for propId, prop in pairs(skin.props) do
-            if prop then
-                SetPedPropIndex(ped, propId, prop.drawable, prop.texture, true)
-            else
-                ClearPedProp(ped, propId)
-            end
+    for propId, prop in pairs(skin.props) do
+        if prop then
+            SetPedPropIndex(ped, propId, prop.drawable, prop.texture, true)
+        else
+            ClearPedProp(ped, propId)
         end
     end
 end
@@ -230,16 +177,8 @@ function RegisterEntity(ped, data)
     if npc then
         CreateThread(function()
             Wait(100)
-
             if DoesEntityExist(npc.ped) then
-                local model = GetEntityModel(npc.ped)
-
-                SkinSystem.Apply(
-                    npc.ped,
-                    npc.class,
-                    model,
-                    npc.skin -- 👈 SQL OVERRIDE
-                )
+                SkinSystem.Apply(npc.ped, npc.class, GetEntityModel(npc.ped), npc.skin)
             end
         end)
     end

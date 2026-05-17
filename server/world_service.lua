@@ -3,9 +3,9 @@
 WorldService = {}
 
 local worldState = {
-    hour         = 12,
-    weather      = "CLEAR",
-    alertLevel   = 0,
+    hour       = 12,
+    weather    = "CLEAR",
+    alertLevel = 0,
 }
 
 function WorldService.GetState()
@@ -13,7 +13,8 @@ function WorldService.GetState()
 end
 
 function WorldService.SetAlertLevel(level)
-    worldState.alertLevel = Clamp and Clamp(level, 0, 5) or math.max(0, math.min(5, level))
+    -- Clamp is defined in shared/utils.lua which is a shared_script (runs on server too)
+    worldState.alertLevel = Clamp(level, 0, 5)
     TriggerClientEvent("npc:alert_level_changed", -1, worldState.alertLevel)
 end
 

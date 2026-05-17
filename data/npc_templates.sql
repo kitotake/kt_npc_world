@@ -9,13 +9,44 @@ CREATE TABLE IF NOT EXISTS `npc_templates` (
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- ================================================================
+-- Uniquement mp_m_freemode_01 & mp_f_freemode_01
+-- Le skin est géré entièrement par SkinSystem (combinaisons aléatoires)
+-- skin = NULL partout : SkinSystem.BuildSkin() choisit tout seul
+-- ================================================================
+
+-- CIVILS
 INSERT INTO `npc_templates` (`model`, `class`, `job`, `skin`) VALUES
-('mp_m_freemode_01', 'civil', 'none', NULL),
-('mp_f_freemode_01', 'civil', 'none', NULL),
-('s_m_m_security_01', 'guard', 'patrol', NULL),
-('s_m_m_scientist_01', 'civil', 'scientist', NULL),
-('g_m_y_lost_01', 'gang', 'stand', NULL),
-('g_m_y_lost_02', 'gang', 'stand', NULL),
-('g_m_y_lost_03', 'gang', 'stand', NULL),
-('a_m_m_skater_01', 'civil', 'skater', NULL),
-('a_f_m_skater_01', 'civil', 'skater', NULL);
+('mp_m_freemode_01', 'civil', 'none',   NULL),
+('mp_m_freemode_01', 'civil', 'none',   NULL),
+('mp_m_freemode_01', 'civil', 'none',   NULL),
+('mp_m_freemode_01', 'civil', 'stand',  NULL),
+('mp_m_freemode_01', 'civil', 'patrol', NULL),
+('mp_f_freemode_01', 'civil', 'none',   NULL),
+('mp_f_freemode_01', 'civil', 'none',   NULL),
+('mp_f_freemode_01', 'civil', 'none',   NULL),
+('mp_f_freemode_01', 'civil', 'stand',  NULL),
+('mp_f_freemode_01', 'civil', 'patrol', NULL),
+
+-- GARDES
+('mp_m_freemode_01', 'guard', 'patrol', NULL),
+('mp_m_freemode_01', 'guard', 'stand',  NULL),
+('mp_m_freemode_01', 'guard', 'drive',  NULL),
+('mp_f_freemode_01', 'guard', 'patrol', NULL),
+('mp_f_freemode_01', 'guard', 'stand',  NULL),
+
+-- GANGS
+('mp_m_freemode_01', 'gang', 'stand',  NULL),
+('mp_m_freemode_01', 'gang', 'stand',  NULL),
+('mp_m_freemode_01', 'gang', 'patrol', NULL),
+('mp_f_freemode_01', 'gang', 'stand',  NULL),
+('mp_f_freemode_01', 'gang', 'patrol', NULL),
+
+-- DEALERS
+('mp_m_freemode_01', 'dealer', 'stand', NULL),
+('mp_f_freemode_01', 'dealer', 'stand', NULL),
+
+-- MEDICS
+('mp_m_freemode_01', 'medic', 'stand',  NULL),
+('mp_f_freemode_01', 'medic', 'stand',  NULL),
+('mp_m_freemode_01', 'medic', 'patrol', NULL);

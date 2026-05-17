@@ -3,7 +3,7 @@
 
 NPC_CLASS_DATA = {
     civil = {
-        fearMultiplier       = 1.5,   -- civils get scared fast
+        fearMultiplier       = 1.5,
         aggressionMultiplier = 0.2,
         stressMultiplier     = 1.0,
         baseHealth           = 100,

@@ -1,10 +1,22 @@
+-- v1.1 : DecisionTree maintenant branché sur les classes canFight (guard, gang, dealer)
+
+-- Classes qui utilisent le decision tree avancé
+local AdvancedClasses = { guard = true, gang = true, dealer = true }
+
 AddEventHandler("npc:update_ai", function()
     local player = PlayerPedId()
 
     for _, npc in pairs(ActiveNPCs) do
         if DoesEntityExist(npc.ped) and not IsEntityDead(npc.ped) then
             ClearPedTasks(npc.ped)
-            DecideAction(npc, player)
+
+            if AdvancedClasses[npc.class] then
+                -- Utilise le decision tree pour les classes complexes
+                local decision = DecisionTree.Evaluate(npc, player)
+                DecisionTree.Execute(npc, decision, player)
+            else
+                DecideAction(npc, player)
+            end
         end
     end
 end)
@@ -33,7 +45,7 @@ function DecideAction(npc, player)
         TaskSmartFleePed(npc.ped, player, 150.0, -1, false, false)
 
     else
-        -- calm : comportement selon le job
+        -- calm
         if npc.job == "patrol" then
             -- géré par behavior_system
         elseif npc.job == "stand" then

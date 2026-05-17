@@ -12,12 +12,26 @@ function RemoveNPC(id)
             DeleteEntity(ActiveNPCs[id].ped)
         end
         ActiveNPCs[id] = nil
+        ReleaseID(id)   -- FIX: recycle l'ID
     end
 end
 
 function GetActiveNPCCount()
     local count = 0
     for _ in pairs(ActiveNPCs) do count += 1 end
+    return count
+end
+
+-- FIX: compte les NPCs dans un rayon donné (utilisé par zone maxNPCs)
+function GetNPCCountInRadius(coords, radius)
+    local count = 0
+    for _, npc in pairs(ActiveNPCs) do
+        if DoesEntityExist(npc.ped) then
+            if #(GetEntityCoords(npc.ped) - coords) <= radius then
+                count += 1
+            end
+        end
+    end
     return count
 end
 

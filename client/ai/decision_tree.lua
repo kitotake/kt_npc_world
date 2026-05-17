@@ -1,17 +1,36 @@
--- Arbre de décision avancé — utilisé pour des PNJ à haute complexité (gardes, chefs de gang)
+-- v1.1 : Decision tree étendu
+-- - Prend en compte la mémoire du NPC (a-t-il déjà été attaqué ?)
+-- - Alerte le groupe si le NPC est en danger
+-- - Comportement ennemi/allié selon les classes
 
 DecisionTree = {}
 
+-- Définit quelles classes sont hostiles entre elles
+local HostileMatrix = {
+    gang  = { guard = true, civil = false },
+    guard = { gang = true, civil = false },
+}
+
+local function IsHostileTo(classA, classB)
+    return HostileMatrix[classA] and HostileMatrix[classA][classB] == true
+end
+
 DecisionTree.Evaluate = function(npc, player)
-    local pCoords  = GetEntityCoords(player)
-    local nCoords  = GetEntityCoords(npc.ped)
-    local dist     = #(nCoords - pCoords)
-    local cd       = npc.classData
+    local pCoords   = GetEntityCoords(player)
+    local nCoords   = GetEntityCoords(npc.ped)
+    local dist      = #(nCoords - pCoords)
+    local cd        = npc.classData
     local hasWeapon = GetSelectedPedWeapon(player) ~= `WEAPON_UNARMED`
+
+    -- Mémoire : si ce NPC a déjà été attaqué, seuil d'engagement abaissé
+    local wasAttacked   = MemorySystem and MemorySystem.Has(npc, MemorySystem.Event.ATTACKED)
+    local aggroThreshold = wasAttacked and 15 or 30
 
     -- Branche 1 : joueur armé à courte portée
     if hasWeapon and dist < 15.0 then
-        if cd.canFight and npc.emotion.aggression > 30 then
+        if cd.canFight and npc.emotion.aggression > aggroThreshold then
+            -- Alerte les membres du même groupe
+            GroupAI.AlertGroup(npc, "engage")
             return "engage"
         elseif cd.preferFlee then
             return "flee_fast"
@@ -38,7 +57,7 @@ DecisionTree.Evaluate = function(npc, player)
         end
     end
 
-    -- Branche 4 : loin du joueur
+    -- Branche 4 : loin
     return "wander_normal"
 end
 
@@ -50,7 +69,6 @@ DecisionTree.Execute = function(npc, decision, player)
         TaskSmartFleePed(npc.ped, player, 150.0, -1, false, false)
 
     elseif decision == "take_cover" then
-        local coords = GetEntityCoords(npc.ped)
         TaskSeekCoverFromPed(npc.ped, player, -1, true)
 
     elseif decision == "back_away" then

@@ -1,15 +1,25 @@
 -- Écoute les événements du monde GTA et les traduit en événements NPC
 
--- Détection d'explosion via native
+-- FIX (bug 1 + bug 2): single canonical detection loop.
+-- Bug 1: the duplicate loop that was in reactions.lua has been removed.
+-- Bug 2: the original loop here fired npc:gunshot_nearby for BOTH gunshots
+--        AND explosions. Explosions (damage type 3) now correctly fire
+--        npc:explosion_nearby.
 CreateThread(function()
     while true do
         Wait(300)
         local player = PlayerPedId()
         local coords = GetEntityCoords(player)
 
-        -- Vérifie une explosion dans un rayon de 80m
+        -- Weapon damage (type 2)
         if HasEntityBeenDamagedByWeapon(player, 0, 2) then
             TriggerEvent("npc:gunshot_nearby", coords)
+            ClearEntityLastWeaponDamage(player)
+        end
+
+        -- Explosion damage (type 3)
+        if HasEntityBeenDamagedByWeapon(player, 0, 3) then
+            TriggerEvent("npc:explosion_nearby", coords)
             ClearEntityLastWeaponDamage(player)
         end
     end
@@ -31,7 +41,7 @@ AddEventHandler("gameEventTriggered", function(name, args)
     end
 end)
 
--- Commande debug pour déclencher un événement de tir manuel
+-- Commandes debug pour déclencher un événement manuel
 RegisterCommand("npc_gunshot", function()
     local coords = GetEntityCoords(PlayerPedId())
     TriggerEvent("npc:gunshot_nearby", coords)

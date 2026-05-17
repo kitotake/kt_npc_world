@@ -3,7 +3,7 @@ game 'gta5'
 
 author 'kt'
 name 'kt_npc_world'
-version '1.0.6'
+version '1.3.0'
 
 dependencies {
     'oxmysql',
@@ -44,9 +44,12 @@ client_scripts {
     'client/systems/emotion_system.lua',
     'client/systems/state_system.lua',
     'client/systems/behavior_system.lua',
+    'client/systems/skin_system.lua',
+    'client/systems/memory_system.lua',   -- v1.1
 
     'client/ai/ai_brain.lua',
     'client/ai/decision_tree.lua',
+    'client/ai/group_ai.lua',             -- v1.1
     'client/ai/reactions.lua',
 
     'client/traffic/traffic_manager.lua',

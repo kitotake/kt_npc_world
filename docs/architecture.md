@@ -26,6 +26,7 @@ Spawn → Emotion → State → AI Brain → Action → Cleanup
 - Lit les émotions, applique les seuils
 - États : calm, scared, panicked, aggressive, fleeing
 - Transitions définies dans `shared/states.lua`
+- Priorité déterministe : panicked > aggressive > fleeing > scared > calm
 
 ### 4. AI Brain (ai_brain, decision_tree)
 - Traduit l'état en commandes natives GTA (`Task*`)
@@ -59,3 +60,15 @@ Spawn → Emotion → State → AI Brain → Action → Cleanup
 /npc_gunshot    — simule un tir
 /npc_explosion  — simule une explosion
 ```
+
+## Bugs corrigés (v1.0.7)
+
+| # | Fichier | Description |
+|---|---|---|
+| 1 | `reactions.lua` | Suppression de la boucle de détection de tir dupliquée |
+| 2 | `event_listener.lua` | Les explosions déclenchent maintenant `npc:explosion_nearby` (type 3) au lieu de `npc:gunshot_nearby` |
+| 3 | `states.lua` | `ResolveNextState` utilise `ipairs` + liste de priorité au lieu de `pairs` |
+| 4 | `skin_system.lua` | `math.random` différé au spawn via `textureRange` + `ResolveSkin()` |
+| 5 | `enums.lua` | `NPC_CLASS.civil` → `NPC_CLASS.CIVIL` (casse uniforme) |
+| 6 | `world_service.lua` | `Clamp` disponible côté serveur via `shared/utils.lua` |
+| 7 | `behavior_system.lua` | Patrol thread vérifie `npc.ped == ped` pour éviter de contrôler un NPC recyclé |

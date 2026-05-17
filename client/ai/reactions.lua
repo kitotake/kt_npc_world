@@ -44,14 +44,5 @@ AddEventHandler("npc:explosion_nearby", function(coords)
     end
 end)
 
--- Détection de tir natif GTA
-CreateThread(function()
-    while true do
-        Wait(500)
-        if HasEntityBeenDamagedByWeapon(PlayerPedId(), 0, 2) then
-            local coords = GetEntityCoords(PlayerPedId())
-            TriggerEvent("npc:gunshot_nearby", coords)
-            ClearEntityLastWeaponDamage(PlayerPedId())
-        end
-    end
-end)
+-- FIX (bug 1): suppression de la boucle de détection de tir native qui était ici en double.
+-- La détection canonique est dans client/world/event_listener.lua.

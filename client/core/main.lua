@@ -5,7 +5,7 @@ EntityIndex = 0
 
 CreateThread(function()
     while true do
-        Wait(1000) -- optimisation (pas besoin de spam chaque frame)
+        Wait(1000)
 
         local playerPed = PlayerPedId()
         local playerId = PlayerId()
@@ -31,7 +31,7 @@ CreateThread(function()
         ClearPlayerWantedLevel(playerId)
         SetMaxWantedLevel(0)
 
-        -- 🚫 sécurité supplémentaire (optionnel mais utile)
+        -- 🚫 sécurité supplémentaire
         DisablePlayerVehicleRewards(playerId)
     end
 end)
