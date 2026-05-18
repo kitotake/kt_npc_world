@@ -1,4 +1,4 @@
--- Service monde : gestion de l'état global de la simulation
+-- server/world_service.lua
 
 WorldService = {}
 
@@ -13,12 +13,10 @@ function WorldService.GetState()
 end
 
 function WorldService.SetAlertLevel(level)
-    -- Clamp is defined in shared/utils.lua which is a shared_script (runs on server too)
     worldState.alertLevel = Clamp(level, 0, 5)
     TriggerClientEvent("npc:alert_level_changed", -1, worldState.alertLevel)
 end
 
--- Mise à jour de l'heure de jeu toutes les 5 minutes
 CreateThread(function()
     while true do
         Wait(300000)

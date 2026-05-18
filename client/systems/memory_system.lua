@@ -1,17 +1,15 @@
 -- client/systems/memory_system.lua
 -- FIX v1.2 :
---   • MemorySystem.Event déclaré EN DÉBUT de fichier (était à la fin → nil si decision_tree
---     est évalué avant la fin du chargement du fichier)
---   • TriggerServerEvent throttlé par NPC (évite le flood réseau sur tirs automatiques)
---   • Count() remplacé par un compteur incrémental dans npc.memory_counts (O(1) au lieu de O(N))
---   • Suppression du handler gameEventTriggered dupliqué avec event_listener.lua
+--   • MemorySystem.Event déclaré EN DÉBUT de fichier
+--   • TriggerServerEvent throttlé par NPC (500ms)
+--   • Count() via compteur incrémental O(1)
+--   • Suppression du handler gameEventTriggered dupliqué
 
 MemorySystem = {}
 
 local MEMORY_TTL = 300000
 
--- FIX: déclaration anticipée de l'enum pour que decision_tree.lua puisse y accéder
--- dès son chargement, quelle que soit la position de la ligne dans ce fichier.
+-- Déclaration anticipée pour que decision_tree.lua puisse y accéder dès son chargement
 local MemoryEvent = {
     ATTACKED            = "attacked",
     WITNESSED_SHOT      = "witnessed_shot",
@@ -19,7 +17,7 @@ local MemoryEvent = {
     INTERACTED          = "interacted",
     PLAYER_DIED         = "player_died",
 }
-MemorySystem.Event = MemoryEvent   -- export immédiat
+MemorySystem.Event = MemoryEvent
 
 -- ==============================================================
 -- ENREGISTREMENT
@@ -34,12 +32,9 @@ function MemorySystem.Record(npc, eventType, data)
         timestamp = GetGameTimer(),
     })
 
-    -- FIX: compteur incrémental pour Count() en O(1)
     if not npc.memory_counts then npc.memory_counts = {} end
     npc.memory_counts[eventType] = (npc.memory_counts[eventType] or 0) + 1
 
-    -- FIX: throttle TriggerServerEvent à 1 appel/500ms par NPC
-    -- Évite le flood réseau lors de tirs automatiques (150+ events/sec potentiels)
     local now = GetGameTimer()
     if not npc._lastServerMemoryEvent or (now - npc._lastServerMemoryEvent) > 500 then
         TriggerServerEvent("npc:memory_event", npc.id, eventType, data)
@@ -58,12 +53,8 @@ function MemorySystem.Has(npc, eventType)
     return false
 end
 
--- FIX: Count utilise le compteur incrémental pour les appels fréquents (ex: npc:gunshot_nearby)
--- Le compteur est éventuellement corrigé par Cleanup() qui purge les expirés.
 function MemorySystem.Count(npc, eventType)
     if not npc or not npc.memory_counts then return 0 end
-    -- Pour une précision exacte (post-TTL), on recalcule depuis la liste
-    -- uniquement si le compteur dépasse 0, ce qui est un cas rare en pratique.
     if not npc.memory_counts[eventType] or npc.memory_counts[eventType] == 0 then return 0 end
     local now   = GetGameTimer()
     local count = 0
@@ -81,9 +72,8 @@ end
 
 function MemorySystem.Cleanup(npc)
     if not npc or not npc.memory then return end
-    local now    = GetGameTimer()
-    local pruned = {}
-    -- FIX: reconstruire les compteurs proprement après purge
+    local now      = GetGameTimer()
+    local pruned   = {}
     local newCounts = {}
     for _, mem in ipairs(npc.memory) do
         if (now - mem.timestamp) < MEMORY_TTL then
@@ -105,7 +95,7 @@ CreateThread(function()
 end)
 
 -- ==============================================================
--- HOOKS SUR LES ÉVÉNEMENTS EXISTANTS
+-- HOOKS
 -- ==============================================================
 
 AddEventHandler("npc:gunshot_nearby", function(coords)
@@ -129,10 +119,6 @@ AddEventHandler("npc:interact", function(npc)
     end
 end)
 
--- FIX: handler gameEventTriggered SUPPRIMÉ ici.
--- Il était dupliqué avec event_listener.lua qui gère déjà la mort du joueur.
--- La réduction d'émotion à la mort du joueur est centralisée dans event_listener.lua.
--- On conserve uniquement l'enregistrement mémoire via un event dédié.
 AddEventHandler("npc:player_died_nearby", function(pCoords)
     for _, npc in pairs(ActiveNPCs) do
         if DoesEntityExist(npc.ped) then

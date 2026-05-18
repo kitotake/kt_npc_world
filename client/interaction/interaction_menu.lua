@@ -1,12 +1,18 @@
 -- client/interaction/interaction_menu.lua
--- Menu d'interaction contextuel (appui sur touche près d'un NPC)
-
-local menuOpen = false
+-- FIX v1.3 :
+--   • Assert au démarrage si target_system.lua n'est pas chargé (GetTargetedNPC absent).
+--     Auparavant : retournait nil silencieusement à chaque frame sans aucun log.
 
 CreateThread(function()
+    -- FIX: vérification explicite au démarrage plutôt qu'un guard silencieux dans la boucle.
+    if not GetTargetedNPC then
+        print("^1[NPC WORLD]^0 ERREUR : GetTargetedNPC est nil. Vérifier que target_system.lua est chargé AVANT interaction_menu.lua dans fxmanifest.")
+        return
+    end
+
     while true do
         local waitTime = 500
-        local target = GetTargetedNPC and GetTargetedNPC() or nil
+        local target   = GetTargetedNPC()
 
         if target and target.ped and DoesEntityExist(target.ped) then
             waitTime = 0
@@ -15,9 +21,9 @@ CreateThread(function()
 
             if IsControlJustReleased(0, 38) then
                 lib.notify({
-                    title = 'Interaction',
+                    title       = 'Interaction',
                     description = 'Tu interagis avec le PNJ.',
-                    type = 'success'
+                    type        = 'success'
                 })
 
                 TriggerEvent('npc:interact', target)

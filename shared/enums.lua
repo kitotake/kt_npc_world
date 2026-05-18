@@ -1,5 +1,4 @@
--- Shared enums for kt_npc_world
--- All constants used across client and server
+-- shared/enums.lua
 
 NPC_STATE = {
     CALM       = "calm",
@@ -10,7 +9,7 @@ NPC_STATE = {
     DEAD       = "dead",
 }
 
--- FIX (bug 5): all keys now uppercase, consistent with GUARD/DEALER/etc.
+-- FIX v1.0 (bug 5): toutes les clés en majuscules
 NPC_CLASS = {
     CIVIL  = "civil",
     GUARD  = "guard",

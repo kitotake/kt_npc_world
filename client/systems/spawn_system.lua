@@ -1,3 +1,9 @@
+-- client/systems/spawn_system.lua
+-- FIX v1.3 :
+--   • SpawnNPCWithJob déclenche npc:group_assigned après avoir positionné npc.group,
+--     au lieu d'appeler GroupAI.Register() directement.
+--     Cela garantit que group_ai.lua reçoit le NPC avec son group déjà défini.
+
 function SpawnNPC(model, coords, class)
     local hash = joaat(model)
 
@@ -26,22 +32,20 @@ function SpawnNPCWithJob(model, coords, class, job, routeId, groupId)
     local npc = SpawnNPC(model, coords, class)
     if not npc then return nil end
 
-    npc.job     = job or "none"
-    npc.routeId = routeId or nil
-    npc.group   = groupId or nil
+    npc.job           = job or "none"
+    npc.routeId       = routeId or nil
+    npc.group         = groupId or nil
     npc.waypointIndex = 1
 
     if job == "patrol" and routeId then
         TriggerEvent("npc:start_patrol", npc.id)
     end
 
-    -- FIX: suppression de l'appel explicite GroupAI.Register(npc) qui doublonnait
-    -- le hook npc:registered déjà déclenché dans SpawnNPC ci-dessus.
-    -- group_ai.lua écoute npc:registered et appelle Register() automatiquement.
-    -- Si le group est défini APRÈS SpawnNPC (comme c'est le cas ici), on force
-    -- un re-enregistrement maintenant que npc.group est positionné.
+    -- FIX v1.3 : on déclenche npc:group_assigned maintenant que npc.group est positionné.
+    -- group_ai.lua écoute cet event et appelle Register() avec le group correct.
+    -- npc:registered (déclenché dans SpawnNPC) arrivait trop tôt : group était encore nil.
     if groupId then
-        GroupAI.Register(npc)
+        TriggerEvent("npc:group_assigned", npc)
     end
 
     return npc

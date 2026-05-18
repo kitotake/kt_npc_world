@@ -1,3 +1,4 @@
+-- client/interaction/target_system.lua
 -- Système de ciblage : détecte le NPC le plus proche du réticule
 
 TargetSystem = {}

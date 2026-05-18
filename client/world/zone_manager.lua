@@ -1,3 +1,4 @@
+-- client/world/zone_manager.lua
 -- Surveille la zone courante du joueur et notifie les changements
 
 local currentZone = nil
@@ -23,7 +24,6 @@ function GetCurrentZone()
     return currentZone
 end
 
--- Quand le joueur entre dans une nouvelle zone, ajuste les émotions de tous les NPC proches
 AddEventHandler("npc:zone_changed", function(prev, next)
     if not next then return end
 

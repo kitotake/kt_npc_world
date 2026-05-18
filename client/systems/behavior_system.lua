@@ -1,7 +1,6 @@
+-- client/systems/behavior_system.lua
 -- FIX v1.2 :
 --   • Patrol thread : accès à ActiveNPCs[npcId] sécurisé contre le nil pendant Wait()
---     (bug : le thread vérifiait la condition PUIS faisait Wait, pendant lequel
---      despawn_system pouvait mettre ActiveNPCs[npcId]=nil → crash au tour suivant)
 
 AddEventHandler("npc:start_patrol", function(npcId)
     local npc = ActiveNPCs[npcId]
@@ -11,8 +10,6 @@ AddEventHandler("npc:start_patrol", function(npcId)
 
     CreateThread(function()
         while true do
-            -- FIX: on récupère la référence fraîche à chaque itération AVANT tout accès.
-            -- Si le NPC a été supprimé ou recyclé pendant le Wait, on sort proprement.
             local current = ActiveNPCs[npcId]
             if not current or current.ped ~= ped or not DoesEntityExist(ped) then return end
 
@@ -26,7 +23,6 @@ AddEventHandler("npc:start_patrol", function(npcId)
                     local start   = GetGameTimer()
                     while GetGameTimer() - start < timeout do
                         Wait(500)
-                        -- FIX: re-vérification après chaque Wait interne également
                         local c = ActiveNPCs[npcId]
                         if not c or c.ped ~= ped then return end
                         local dist = #(GetEntityCoords(ped) - wp)
@@ -34,7 +30,6 @@ AddEventHandler("npc:start_patrol", function(npcId)
                         if c.state ~= "calm" then break end
                     end
 
-                    -- Re-vérification après la sous-boucle
                     local c = ActiveNPCs[npcId]
                     if not c or c.ped ~= ped then return end
 

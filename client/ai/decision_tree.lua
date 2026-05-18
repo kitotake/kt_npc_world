@@ -1,8 +1,10 @@
 -- decision_tree.lua
--- FIX v1.2 :
---   • HostileMatrix supprimé (dead code — IsHostileTo n'était jamais appelé dans Evaluate)
---   • back_away remplacé par TaskSmartFleePed courte distance (évite les destinations hors map)
---   • MemorySystem.Event est maintenant garanti disponible (déclaré en tête de memory_system.lua)
+-- FIX v1.3 :
+--   • aggroThreshold lu depuis classData.aggroThreshold ou Config.AI.aggroThreshold
+--     au lieu d'être hardcodé (15/30 identiques pour tous les NPCs avancés)
+--   • HostileMatrix supprimé (dead code)
+--   • back_away : TaskSmartFleePed courte distance (v1.2)
+--   • MemorySystem.Event garanti disponible (memory_system.lua)
 
 DecisionTree = {}
 
@@ -13,8 +15,13 @@ DecisionTree.Evaluate = function(npc, player)
     local cd        = npc.classData
     local hasWeapon = GetSelectedPedWeapon(player) ~= `WEAPON_UNARMED`
 
-    local wasAttacked    = MemorySystem and MemorySystem.Has(npc, MemorySystem.Event.ATTACKED)
-    local aggroThreshold = wasAttacked and 15 or 30
+    local wasAttacked = MemorySystem and MemorySystem.Has(npc, MemorySystem.Event.ATTACKED)
+
+    -- FIX: seuil d'agression depuis classData ou Config, pas hardcodé.
+    -- Permet aux gangs (aggressionMultiplier 2.0) d'être plus réactifs que les dealers.
+    local baseThreshold    = cd.aggroThreshold or (Config.AI and Config.AI.aggroThreshold) or 30
+    local attackedModifier = cd.attackedAggroModifier or (Config.AI and Config.AI.attackedAggroModifier) or 15
+    local aggroThreshold   = wasAttacked and attackedModifier or baseThreshold
 
     -- Branche 1 : joueur armé à courte portée
     if hasWeapon and dist < 15.0 then
@@ -60,8 +67,6 @@ DecisionTree.Execute = function(npc, decision, player)
         TaskSeekCoverFromPed(npc.ped, player, -1, true)
 
     elseif decision == "back_away" then
-        -- FIX: TaskSmartFleePed courte distance remplace le calcul manuel de vecteur
-        -- qui pouvait envoyer le NPC hors map ou dans un mur.
         TaskSmartFleePed(npc.ped, player, 12.0, 3000, false, false)
 
     elseif decision == "idle_watch" then
@@ -73,7 +78,7 @@ DecisionTree.Execute = function(npc, decision, player)
     elseif decision == "wander_slow" then
         TaskWanderStandard(npc.ped, 3.0, 10)
 
-    else
+    else -- wander_normal
         TaskWanderStandard(npc.ped, 5.0, 10)
     end
 end

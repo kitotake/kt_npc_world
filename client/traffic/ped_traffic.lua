@@ -1,6 +1,5 @@
--- FIX v1.2 :
---   • SpawnTransient : le thread capture maintenant savedId + savedPed pour détecter
---     si le NPC a été recyclé (son ID réattribué à un autre NPC) avant la suppression.
+-- client/traffic/ped_traffic.lua
+-- FIX v1.2 : SpawnTransient capture savedId + savedPed pour détecter le recyclage d'ID.
 
 PedTraffic = {}
 
@@ -8,7 +7,6 @@ function PedTraffic.SpawnTransient(model, startCoords, endCoords, class)
     local npc = SpawnNPC(model, startCoords, class)
     if not npc then return end
 
-    -- FIX: capture des identifiants avant tout Wait pour détecter le recyclage d'ID
     local savedId  = npc.id
     local savedPed = npc.ped
 
@@ -19,10 +17,9 @@ function PedTraffic.SpawnTransient(model, startCoords, endCoords, class)
         local start   = GetGameTimer()
         while GetGameTimer() - start < timeout do
             Wait(1000)
-            -- FIX: vérifier que l'ID n'a pas été recyclé vers un autre NPC
             local current = ActiveNPCs[savedId]
-            if not current then return end                    -- déjà supprimé
-            if current.ped ~= savedPed then return end       -- ID recyclé → ne pas toucher
+            if not current then return end
+            if current.ped ~= savedPed then return end
 
             if not DoesEntityExist(savedPed) then
                 RemoveNPC(savedId)
@@ -36,7 +33,6 @@ function PedTraffic.SpawnTransient(model, startCoords, endCoords, class)
             end
         end
 
-        -- Timeout : même vérification avant suppression
         local current = ActiveNPCs[savedId]
         if current and current.ped == savedPed then
             RemoveNPC(savedId)

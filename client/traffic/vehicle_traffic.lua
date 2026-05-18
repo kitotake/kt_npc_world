@@ -1,3 +1,5 @@
+-- client/traffic/vehicle_traffic.lua
+
 local vehicleModels = { "blista", "dilettante", "surge", "panto", "issi2" }
 
 AddEventHandler("npc:spawn_vehicle_for", function(id)
@@ -23,10 +25,9 @@ AddEventHandler("npc:spawn_vehicle_for", function(id)
     npc.job     = "drive"
 end)
 
--- Spawn un conducteur aléatoire dans une voiture
 function SpawnVehicleNPC(coords, class)
-    local model   = GetRandomModelForClass(class or "civil")
-    local npc     = SpawnNPC(model, coords, class or "civil")
+    local model = GetRandomModelForClass(class or "civil")
+    local npc   = SpawnNPC(model, coords, class or "civil")
     if not npc then return end
 
     TriggerEvent("npc:spawn_vehicle_for", npc.id)

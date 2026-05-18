@@ -1,3 +1,4 @@
+-- client/interaction/interaction_system.lua
 -- Interactions disponibles selon la classe et l'état du NPC
 
 InteractionSystem = {}

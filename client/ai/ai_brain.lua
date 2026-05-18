@@ -1,6 +1,7 @@
--- v1.1 : DecisionTree maintenant branché sur les classes canFight (guard, gang, dealer)
+-- v1.3 : ClearPedTasks ne s'applique plus aveuglément à chaque tick.
+-- On track la décision précédente par NPC et on ne clear/reassigne que si elle change.
+-- Évite les micro-interruptions visuelles sur TaskCombatPed, TaskSeekCoverFromPed, etc.
 
--- Classes qui utilisent le decision tree avancé
 local AdvancedClasses = { guard = true, gang = true, dealer = true }
 
 AddEventHandler("npc:update_ai", function()
@@ -8,16 +9,37 @@ AddEventHandler("npc:update_ai", function()
 
     for _, npc in pairs(ActiveNPCs) do
         if DoesEntityExist(npc.ped) and not IsEntityDead(npc.ped) then
-            ClearPedTasks(npc.ped)
 
             if AdvancedClasses[npc.class] then
-                -- Utilise le decision tree pour les classes complexes
                 local decision = DecisionTree.Evaluate(npc, player)
-                DecisionTree.Execute(npc, decision, player)
+
+                -- FIX: ne reassigner la tâche que si la décision a changé.
+                -- ClearPedTasks chaque seconde annulait TaskCombatPed, TaskSeekCoverFromPed, etc.
+                -- causant des micro-interruptions et des comportements de combat cassés.
+                if decision ~= npc._lastDecision then
+                    ClearPedTasks(npc.ped)
+                    DecisionTree.Execute(npc, decision, player)
+                    npc._lastDecision = decision
+                end
             else
-                DecideAction(npc, player)
+                -- Pour les classes simples, on compare aussi l'état
+                if npc.state ~= npc._lastState then
+                    ClearPedTasks(npc.ped)
+                    DecideAction(npc, player)
+                    npc._lastState = npc.state
+                end
             end
+
         end
+    end
+end)
+
+-- Réinitialise le cache de décision lors d'un changement d'état externe
+-- (ex : explosion qui force l'état "panicked" indépendamment de l'AI tick)
+AddEventHandler("npc:state_changed", function(npc, prevState, newState)
+    if npc then
+        npc._lastDecision = nil
+        npc._lastState    = nil
     end
 end)
 

@@ -1,4 +1,4 @@
--- Gestion des groupes de NPC (gangs, escortes, patrouilles)
+-- server/groups_service.lua
 
 GroupsService = {}
 local groups = {}

@@ -1,3 +1,5 @@
+-- client/core/npc_manager.lua
+
 function GetNPCs()
     return ActiveNPCs
 end
@@ -11,8 +13,6 @@ function RemoveNPC(id)
         if DoesEntityExist(ActiveNPCs[id].ped) then
             DeleteEntity(ActiveNPCs[id].ped)
         end
-        -- FIX: gestion du véhicule centralisée ici pour éviter les doubles DeleteEntity
-        -- avec despawn_system qui supprimait aussi npc.vehicle séparément.
         if ActiveNPCs[id].vehicle and DoesEntityExist(ActiveNPCs[id].vehicle) then
             DeleteEntity(ActiveNPCs[id].vehicle)
         end
@@ -53,9 +53,8 @@ function GetNearestNPC(coords, maxDist)
     return nearest, nearestDist
 end
 
--- FIX: itération sûre sur ActiveNPCs avec suppression différée.
--- Appeler ceci à la place d'un pairs() direct quand des suppressions peuvent
--- survenir pendant la boucle (comportement indéfini en Lua standard).
+-- Itération sûre sur ActiveNPCs avec suppression différée.
+-- Utiliser cette fonction quand des suppressions peuvent survenir pendant la boucle.
 function ForEachNPC(fn)
     local toRemove = {}
     for id, npc in pairs(ActiveNPCs) do

@@ -1,8 +1,11 @@
--- Gestion des véhicules associés aux NPC
+-- client/vehicles/vehicle_system.lua
+-- FIX v1.3 :
+--   • EjectNPC : le Wait(1500) est maintenant dans un CreateThread dédié.
+--     L'ancienne version bloquait le thread appelant pendant 1.5s, ce qui est
+--     problématique si appelé depuis un handler ou la boucle principale.
 
 VehicleSystem = {}
 
--- Supprime le véhicule d'un NPC si celui-ci est trop loin
 function VehicleSystem.CleanupVehicle(npc)
     if npc.vehicle and DoesEntityExist(npc.vehicle) then
         local player = PlayerPedId()
@@ -14,17 +17,23 @@ function VehicleSystem.CleanupVehicle(npc)
     end
 end
 
--- Fait sortir le NPC de son véhicule
+-- FIX: Wait(1500) dans son propre thread pour ne pas bloquer l'appelant.
 function VehicleSystem.EjectNPC(npc)
-    if npc.vehicle and DoesEntityExist(npc.vehicle) then
-        TaskLeaveVehicle(npc.ped, npc.vehicle, 0)
+    if not npc.vehicle or not DoesEntityExist(npc.vehicle) then return end
+
+    TaskLeaveVehicle(npc.ped, npc.vehicle, 0)
+
+    local savedVehicle = npc.vehicle
+    CreateThread(function()
         Wait(1500)
-        npc.vehicle = nil
-        npc.job     = "none"
-    end
+        -- Vérifier que le NPC n'a pas été supprimé pendant l'attente
+        if DoesEntityExist(npc.ped) then
+            npc.vehicle = nil
+            npc.job     = "none"
+        end
+    end)
 end
 
--- Vérifie les véhicules abandonnés chaque 5s
 CreateThread(function()
     while true do
         Wait(5000)

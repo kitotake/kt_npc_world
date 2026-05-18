@@ -6,14 +6,10 @@ CREATE TABLE IF NOT EXISTS `npc_memory` (
     `created_at` TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
     INDEX `idx_npc_id` (`npc_id`),
-    -- FIX: index sur created_at indispensable pour la requête de purge (DELETE WHERE created_at < X)
-    -- Sans cet index, MySQL fait un full scan à chaque purge.
+    -- Index indispensable pour la purge (DELETE WHERE created_at < X) : évite le full scan.
     INDEX `idx_created_at` (`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- FIX: event de purge automatique (supprime les souvenirs de plus de 7 jours)
--- À activer sur le serveur MySQL si les events sont supportés (MySQL 5.1+).
--- Remplace un job cron externe ou une purge manuelle dans le code serveur.
 DROP EVENT IF EXISTS `purge_old_npc_memory`;
 CREATE EVENT `purge_old_npc_memory`
     ON SCHEDULE EVERY 1 DAY

@@ -1,4 +1,5 @@
--- State definitions and valid transitions for NPC state machine
+-- shared/states.lua
+-- FIX v1.2 : bug logique fleeing→scared corrigé, ipairs + priorité déterministe
 
 StateTransitions = {
     calm = {
@@ -7,9 +8,9 @@ StateTransitions = {
         aggressive = function(npc) return npc.emotion.aggression > EMOTION_THRESHOLDS.AGGRO end,
     },
     scared = {
-        calm     = function(npc) return npc.emotion.stress <= 20 and npc.emotion.fear <= 20 end,
-        panicked = function(npc) return npc.emotion.fear > EMOTION_THRESHOLDS.PANIC_FEAR end,
-        fleeing  = function(npc) return npc.classData.preferFlee and npc.emotion.fear > 35 end,
+        calm       = function(npc) return npc.emotion.stress <= 20 and npc.emotion.fear <= 20 end,
+        panicked   = function(npc) return npc.emotion.fear > EMOTION_THRESHOLDS.PANIC_FEAR end,
+        fleeing    = function(npc) return npc.classData.preferFlee and npc.emotion.fear > 35 end,
         aggressive = function(npc) return npc.emotion.aggression > EMOTION_THRESHOLDS.AGGRO end,
     },
     panicked = {
@@ -23,17 +24,14 @@ StateTransitions = {
         fleeing  = function(npc) return npc.classData.preferFlee and npc.emotion.fear > 80 end,
     },
     fleeing = {
-        calm   = function(npc) return npc.emotion.fear <= 10 end,
-        -- FIX: `not npc.classData.preferFlee == false` était évalué comme `(not preferFlee) == false`
-        -- soit `preferFlee == true`, ce qui est l'inverse de l'intention.
-        -- Correction : on sort de fleeing vers scared uniquement si le NPC ne préfère PAS fuir.
+        calm     = function(npc) return npc.emotion.fear <= 10 end,
+        -- FIX v1.2 : `not npc.classData.preferFlee == false` → expression correcte
         scared   = function(npc) return npc.emotion.fear <= 35 and npc.classData.preferFlee == false end,
         panicked = function(npc) return npc.emotion.fear > EMOTION_THRESHOLDS.PANIC_FEAR and not npc.classData.preferFlee end,
     },
     dead = {},
 }
 
--- Priorité déterministe : évite les résultats aléatoires quand pairs() itère
 local transitionPriority = { "panicked", "aggressive", "fleeing", "scared", "calm" }
 
 function ResolveNextState(npc)

@@ -1,8 +1,7 @@
+-- client/world/event_listener.lua
 -- FIX v1.2 :
---   • La mort du joueur ne réduit les émotions qu'UNE seule fois (suppression du doublon
---     qui existait dans memory_system.lua)
---   • Déclenche npc:player_died_nearby pour que memory_system puisse enregistrer
---     le souvenir sans dupliquer la logique d'émotion
+--   • La mort du joueur ne réduit les émotions qu'UNE seule fois (doublon supprimé de memory_system.lua)
+--   • Déclenche npc:player_died_nearby pour l'enregistrement mémoire
 
 CreateThread(function()
     while true do
@@ -22,8 +21,7 @@ CreateThread(function()
     end
 end)
 
--- FIX: source unique pour la mort du joueur.
--- memory_system.lua ne gère PLUS ce handler (supprimé là-bas).
+-- Source unique pour la mort du joueur.
 -- La réduction d'émotion se fait ici, l'enregistrement mémoire via npc:player_died_nearby.
 AddEventHandler("gameEventTriggered", function(name, args)
     if name == "CEventNetworkEntityDamage" then
@@ -38,7 +36,6 @@ AddEventHandler("gameEventTriggered", function(name, args)
                 end
             end
 
-            -- Notifie memory_system séparément pour l'enregistrement du souvenir
             TriggerEvent("npc:player_died_nearby", pCoords)
         end
     end

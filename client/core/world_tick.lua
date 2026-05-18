@@ -1,3 +1,6 @@
+-- client/core/world_tick.lua
+-- Boucle principale : 1 tick par seconde
+
 CreateThread(function()
     while true do
         Wait(1000)

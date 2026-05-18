@@ -1,3 +1,4 @@
+-- client/vehicles/driving_ai.lua
 -- Comportements de conduite avancés
 
 DrivingAI = {}
@@ -14,7 +15,6 @@ function DrivingAI.SetStyle(npc, style)
     TaskVehicleDriveWander(npc.ped, npc.vehicle, 20.0, flags)
 end
 
--- Quand un NPC devient paniqué dans un véhicule : conduite agressive
 AddEventHandler("npc:state_changed", function(npc, prev, next)
     if npc.vehicle and DoesEntityExist(npc.vehicle) then
         if next == "panicked" then

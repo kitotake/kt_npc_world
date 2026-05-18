@@ -9,11 +9,7 @@ CREATE TABLE IF NOT EXISTS `npc_templates` (
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- ================================================================
--- Uniquement mp_m_freemode_01 & mp_f_freemode_01
--- Le skin est géré entièrement par SkinSystem (combinaisons aléatoires)
--- skin = NULL partout : SkinSystem.BuildSkin() choisit tout seul
--- ================================================================
+-- skin = NULL partout : SkinSystem.BuildSkin() gère tout aléatoirement
 
 -- CIVILS
 INSERT INTO `npc_templates` (`model`, `class`, `job`, `skin`) VALUES

@@ -1,8 +1,10 @@
 -- client/ai/group_ai.lua
--- FIX v1.2 :
---   • GroupAI.Register n'est plus appelé deux fois pour les NPCs avec group.
---     SpawnNPCWithJob appelait Register() explicitement ET déclenchait npc:registered
---     (qui appelle aussi Register via le hook). Un seul chemin suffit : le hook.
+-- FIX v1.3 :
+--   • npc:registered ne déclenche plus Register si npc.group n'est pas encore défini
+--     (cas SpawnNPCWithJob qui pose group APRÈS SpawnNPC).
+--     L'enregistrement effectif se fait via npc:group_assigned déclenché explicitement
+--     une fois npc.group positionné.
+--   • Idempotence conservée dans Register().
 
 GroupAI = {}
 
@@ -13,7 +15,6 @@ function GroupAI.Register(npc)
     if not activeGroups[npc.group] then
         activeGroups[npc.group] = {}
     end
-    -- FIX: vérification d'existence avant d'enregistrer (idempotent)
     if not activeGroups[npc.group][npc.id] then
         activeGroups[npc.group][npc.id] = true
     end
@@ -62,8 +63,20 @@ function GroupAI.AlertGroup(npc, alertType)
     end
 end
 
--- Hook unique pour l'enregistrement — SpawnNPCWithJob ne doit PAS appeler Register() directement
+-- FIX v1.3 : npc:registered n'enregistre plus si group est nil à ce stade.
+-- SpawnNPCWithJob pose npc.group APRÈS SpawnNPC → le hook était toujours appelé
+-- avec group=nil, puis l'appel explicite Register() dans SpawnNPCWithJob enregistrait.
+-- Désormais : npc:group_assigned est le seul chemin pour les NPCs avec groupe.
 AddEventHandler("npc:registered", function(npc)
+    -- Enregistre seulement si le group est déjà connu au moment du spawn
+    -- (cas d'un NPC spawné directement avec group pré-rempli)
+    if npc.group then
+        GroupAI.Register(npc)
+    end
+end)
+
+-- Nouveau event déclenché par SpawnNPCWithJob une fois npc.group positionné
+AddEventHandler("npc:group_assigned", function(npc)
     GroupAI.Register(npc)
 end)
 

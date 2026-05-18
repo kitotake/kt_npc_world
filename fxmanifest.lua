@@ -45,11 +45,11 @@ client_scripts {
     'client/systems/state_system.lua',
     'client/systems/behavior_system.lua',
     'client/systems/skin_system.lua',
-    'client/systems/memory_system.lua',   -- v1.1
+    'client/systems/memory_system.lua',
 
     'client/ai/ai_brain.lua',
     'client/ai/decision_tree.lua',
-    'client/ai/group_ai.lua',             -- v1.1
+    'client/ai/group_ai.lua',
     'client/ai/reactions.lua',
 
     'client/traffic/traffic_manager.lua',

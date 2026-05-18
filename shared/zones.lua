@@ -1,6 +1,5 @@
--- World zone definitions
--- Zones influence NPC spawn density, emotion modifiers, and allowed classes
--- v1.1 : ajout de spawnPoints (points fixes) et respect de maxNPCs par zone
+-- shared/zones.lua
+-- v1.1 : spawnPoints fixes + maxNPCs par zone
 
 Zones = {
     {
@@ -62,9 +61,9 @@ Zones = {
         spawnClasses = { "civil", "guard" },
         emotionMod   = { fear = -5, stress = -5, aggression = -10 },
         spawnPoints  = {
-            vector3(428.0, -984.0, 30.0),
+            vector3(428.0, -984.0,  30.0),
             vector3(450.0, -1000.0, 30.0),
-            vector3(410.0, -970.0, 30.0),
+            vector3(410.0, -970.0,  30.0),
         },
     },
 }
@@ -78,8 +77,6 @@ function GetZoneAt(coords)
     return nil
 end
 
--- Retourne un point de spawn aléatoire dans la zone,
--- avec un léger offset aléatoire pour éviter l'empilement
 function GetSpawnPointInZone(zone)
     if zone.spawnPoints and #zone.spawnPoints > 0 then
         local pt = zone.spawnPoints[math.random(#zone.spawnPoints)]
@@ -89,7 +86,6 @@ function GetSpawnPointInZone(zone)
             pt.z
         )
     end
-    -- Fallback : position aléatoire dans le rayon de la zone
     local r = zone.radius * 0.8
     return vector3(
         zone.center.x + math.random(-r, r),
