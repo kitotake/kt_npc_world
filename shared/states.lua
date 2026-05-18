@@ -9,26 +9,25 @@ StateTransitions = {
     scared = {
         calm     = function(npc) return npc.emotion.stress <= 20 and npc.emotion.fear <= 20 end,
         panicked = function(npc) return npc.emotion.fear > EMOTION_THRESHOLDS.PANIC_FEAR end,
-        -- FIX: fleeing maintenant accessible — un NPC scared qui préfère fuir bascule ici
         fleeing  = function(npc) return npc.classData.preferFlee and npc.emotion.fear > 35 end,
         aggressive = function(npc) return npc.emotion.aggression > EMOTION_THRESHOLDS.AGGRO end,
     },
     panicked = {
         scared  = function(npc) return npc.emotion.fear <= 40 end,
         calm    = function(npc) return npc.emotion.fear <= 10 end,
-        -- FIX: un NPC paniqué qui préfère fuir bascule en fleeing
         fleeing = function(npc) return npc.classData.preferFlee end,
     },
     aggressive = {
         calm     = function(npc) return npc.emotion.aggression <= 10 end,
         panicked = function(npc) return npc.emotion.fear > EMOTION_THRESHOLDS.PANIC_FEAR end,
-        -- Un combattant trop blessé peut fuir (si preferFlee)
         fleeing  = function(npc) return npc.classData.preferFlee and npc.emotion.fear > 80 end,
     },
-    -- FIX: fleeing a maintenant des transitions de sortie cohérentes
     fleeing = {
-        calm     = function(npc) return npc.emotion.fear <= 10 end,
-        scared   = function(npc) return npc.emotion.fear <= 35 and not npc.classData.preferFlee == false end,
+        calm   = function(npc) return npc.emotion.fear <= 10 end,
+        -- FIX: `not npc.classData.preferFlee == false` était évalué comme `(not preferFlee) == false`
+        -- soit `preferFlee == true`, ce qui est l'inverse de l'intention.
+        -- Correction : on sort de fleeing vers scared uniquement si le NPC ne préfère PAS fuir.
+        scared   = function(npc) return npc.emotion.fear <= 35 and npc.classData.preferFlee == false end,
         panicked = function(npc) return npc.emotion.fear > EMOTION_THRESHOLDS.PANIC_FEAR and not npc.classData.preferFlee end,
     },
     dead = {},

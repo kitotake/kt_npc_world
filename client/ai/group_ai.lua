@@ -1,22 +1,24 @@
 -- client/ai/group_ai.lua
--- v1.1 : comportement de groupe côté client
--- Les membres d'un même groupe réagissent aux alertes de leurs alliés
+-- FIX v1.2 :
+--   • GroupAI.Register n'est plus appelé deux fois pour les NPCs avec group.
+--     SpawnNPCWithJob appelait Register() explicitement ET déclenchait npc:registered
+--     (qui appelle aussi Register via le hook). Un seul chemin suffit : le hook.
 
 GroupAI = {}
 
--- Cache local des groupes actifs { [groupId] = { npcId, ... } }
 local activeGroups = {}
 
--- Enregistre un NPC dans un groupe local
 function GroupAI.Register(npc)
     if not npc.group then return end
     if not activeGroups[npc.group] then
         activeGroups[npc.group] = {}
     end
-    activeGroups[npc.group][npc.id] = true
+    -- FIX: vérification d'existence avant d'enregistrer (idempotent)
+    if not activeGroups[npc.group][npc.id] then
+        activeGroups[npc.group][npc.id] = true
+    end
 end
 
--- Désenregistre un NPC de son groupe (au despawn)
 function GroupAI.Unregister(npc)
     if not npc.group then return end
     if activeGroups[npc.group] then
@@ -24,8 +26,6 @@ function GroupAI.Unregister(npc)
     end
 end
 
--- Alerte tous les membres du groupe d'un NPC
--- alertType : "engage" | "flee" | "cover"
 function GroupAI.AlertGroup(npc, alertType)
     if not npc.group then return end
     local group = activeGroups[npc.group]
@@ -39,17 +39,15 @@ function GroupAI.AlertGroup(npc, alertType)
             if member and DoesEntityExist(member.ped) then
                 local dist = #(GetEntityCoords(member.ped) - origin)
 
-                -- Rayon d'alerte : 80m
                 if dist < 80.0 then
                     if alertType == "engage" then
-                        -- Monte l'aggression des alliés combattants
                         if member.classData.canFight then
                             member.emotion.aggression = Clamp(member.emotion.aggression + 40, 0, 100)
                         else
                             member.emotion.fear = Clamp(member.emotion.fear + 20, 0, 100)
                         end
                     elseif alertType == "flee" then
-                        member.emotion.fear  = Clamp(member.emotion.fear + 30, 0, 100)
+                        member.emotion.fear   = Clamp(member.emotion.fear + 30, 0, 100)
                         member.emotion.stress = Clamp(member.emotion.stress + 20, 0, 100)
                     end
 
@@ -64,17 +62,15 @@ function GroupAI.AlertGroup(npc, alertType)
     end
 end
 
--- Hook sur le spawn pour auto-enregistrer les NPCs avec un groupe
+-- Hook unique pour l'enregistrement — SpawnNPCWithJob ne doit PAS appeler Register() directement
 AddEventHandler("npc:registered", function(npc)
     GroupAI.Register(npc)
 end)
 
--- Hook sur le despawn
 AddEventHandler("npc:removed", function(npc)
     GroupAI.Unregister(npc)
 end)
 
--- Mise à jour côté serveur : un groupe est dissous
 AddEventHandler("npc:group_dissolved", function(groupId)
     activeGroups[groupId] = nil
 end)

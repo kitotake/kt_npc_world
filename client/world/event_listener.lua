@@ -1,23 +1,20 @@
--- Écoute les événements du monde GTA et les traduit en événements NPC
+-- FIX v1.2 :
+--   • La mort du joueur ne réduit les émotions qu'UNE seule fois (suppression du doublon
+--     qui existait dans memory_system.lua)
+--   • Déclenche npc:player_died_nearby pour que memory_system puisse enregistrer
+--     le souvenir sans dupliquer la logique d'émotion
 
--- FIX (bug 1 + bug 2): single canonical detection loop.
--- Bug 1: the duplicate loop that was in reactions.lua has been removed.
--- Bug 2: the original loop here fired npc:gunshot_nearby for BOTH gunshots
---        AND explosions. Explosions (damage type 3) now correctly fire
---        npc:explosion_nearby.
 CreateThread(function()
     while true do
         Wait(300)
         local player = PlayerPedId()
         local coords = GetEntityCoords(player)
 
-        -- Weapon damage (type 2)
         if HasEntityBeenDamagedByWeapon(player, 0, 2) then
             TriggerEvent("npc:gunshot_nearby", coords)
             ClearEntityLastWeaponDamage(player)
         end
 
-        -- Explosion damage (type 3)
         if HasEntityBeenDamagedByWeapon(player, 0, 3) then
             TriggerEvent("npc:explosion_nearby", coords)
             ClearEntityLastWeaponDamage(player)
@@ -25,23 +22,28 @@ CreateThread(function()
     end
 end)
 
--- Réaction au décès du joueur
+-- FIX: source unique pour la mort du joueur.
+-- memory_system.lua ne gère PLUS ce handler (supprimé là-bas).
+-- La réduction d'émotion se fait ici, l'enregistrement mémoire via npc:player_died_nearby.
 AddEventHandler("gameEventTriggered", function(name, args)
     if name == "CEventNetworkEntityDamage" then
         local victim = args[1]
         if victim == PlayerPedId() and IsEntityDead(victim) then
-            -- Joueur mort : les NPC proches retrouvent leur calme
+            local pCoords = GetEntityCoords(victim)
+
             for _, npc in pairs(ActiveNPCs) do
                 if DoesEntityExist(npc.ped) then
                     npc.emotion.fear       = math.max(0, npc.emotion.fear - 40)
                     npc.emotion.aggression = math.max(0, npc.emotion.aggression - 40)
                 end
             end
+
+            -- Notifie memory_system séparément pour l'enregistrement du souvenir
+            TriggerEvent("npc:player_died_nearby", pCoords)
         end
     end
 end)
 
--- Commandes debug pour déclencher un événement manuel
 RegisterCommand("npc_gunshot", function()
     local coords = GetEntityCoords(PlayerPedId())
     TriggerEvent("npc:gunshot_nearby", coords)

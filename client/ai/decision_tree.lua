@@ -1,19 +1,10 @@
--- v1.1 : Decision tree étendu
--- - Prend en compte la mémoire du NPC (a-t-il déjà été attaqué ?)
--- - Alerte le groupe si le NPC est en danger
--- - Comportement ennemi/allié selon les classes
+-- decision_tree.lua
+-- FIX v1.2 :
+--   • HostileMatrix supprimé (dead code — IsHostileTo n'était jamais appelé dans Evaluate)
+--   • back_away remplacé par TaskSmartFleePed courte distance (évite les destinations hors map)
+--   • MemorySystem.Event est maintenant garanti disponible (déclaré en tête de memory_system.lua)
 
 DecisionTree = {}
-
--- Définit quelles classes sont hostiles entre elles
-local HostileMatrix = {
-    gang  = { guard = true, civil = false },
-    guard = { gang = true, civil = false },
-}
-
-local function IsHostileTo(classA, classB)
-    return HostileMatrix[classA] and HostileMatrix[classA][classB] == true
-end
 
 DecisionTree.Evaluate = function(npc, player)
     local pCoords   = GetEntityCoords(player)
@@ -22,14 +13,12 @@ DecisionTree.Evaluate = function(npc, player)
     local cd        = npc.classData
     local hasWeapon = GetSelectedPedWeapon(player) ~= `WEAPON_UNARMED`
 
-    -- Mémoire : si ce NPC a déjà été attaqué, seuil d'engagement abaissé
-    local wasAttacked   = MemorySystem and MemorySystem.Has(npc, MemorySystem.Event.ATTACKED)
+    local wasAttacked    = MemorySystem and MemorySystem.Has(npc, MemorySystem.Event.ATTACKED)
     local aggroThreshold = wasAttacked and 15 or 30
 
     -- Branche 1 : joueur armé à courte portée
     if hasWeapon and dist < 15.0 then
         if cd.canFight and npc.emotion.aggression > aggroThreshold then
-            -- Alerte les membres du même groupe
             GroupAI.AlertGroup(npc, "engage")
             return "engage"
         elseif cd.preferFlee then
@@ -57,7 +46,6 @@ DecisionTree.Evaluate = function(npc, player)
         end
     end
 
-    -- Branche 4 : loin
     return "wander_normal"
 end
 
@@ -72,10 +60,9 @@ DecisionTree.Execute = function(npc, decision, player)
         TaskSeekCoverFromPed(npc.ped, player, -1, true)
 
     elseif decision == "back_away" then
-        local pCoords = GetEntityCoords(player)
-        local nCoords = GetEntityCoords(npc.ped)
-        local away    = nCoords + (nCoords - pCoords) * 0.5
-        TaskGoStraightToCoord(npc.ped, away.x, away.y, away.z, 1.5, 3000, 0.0, 0.3)
+        -- FIX: TaskSmartFleePed courte distance remplace le calcul manuel de vecteur
+        -- qui pouvait envoyer le NPC hors map ou dans un mur.
+        TaskSmartFleePed(npc.ped, player, 12.0, 3000, false, false)
 
     elseif decision == "idle_watch" then
         TaskTurnPedToFaceEntity(npc.ped, player, 2000)

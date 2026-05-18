@@ -1,12 +1,6 @@
--- Commandes de debug accessibles en jeu
-
--- ~g~[NPC WORLD] commandes disponibles :
--- /npc_debug     — toggle overlay debug
--- /npc_info      — affiche les stats du NPC le plus proche
--- /npc_spawn     — spawn un NPC à votre position
--- /npc_clear     — supprime tous les NPC actifs
--- /npc_gunshot   — simule un tir à votre position
--- /npc_explosion — simule une explosion à votre position
+-- FIX v1.2 :
+--   • /npc_clear utilise RemoveNPC() pour recycler les IDs correctement
+--   • /npc_spawn valide la classe avant spawn pour éviter un crash sur classe inconnue
 
 RegisterCommand("npc_debug", function()
     Config.Debug = not Config.Debug
@@ -29,7 +23,12 @@ RegisterCommand("npc_info", function()
 end, false)
 
 RegisterCommand("npc_spawn", function(_, args)
-    local class  = args[1] or "civil"
+    -- FIX: validation de la classe — évite joaat(nil) si la classe est inconnue
+    local class = args[1] or "civil"
+    if not NPC_CLASS_DATA[class] then
+        print(("^3[NPC WORLD]^0 Classe inconnue '%s', utilisation de 'civil'"):format(class))
+        class = "civil"
+    end
     local model  = GetRandomModelForClass(class)
     local coords = GetEntityCoords(PlayerPedId())
     SpawnNPC(model, coords + vector3(2.0, 0.0, 0.0), class)
@@ -37,13 +36,15 @@ RegisterCommand("npc_spawn", function(_, args)
 end, false)
 
 RegisterCommand("npc_clear", function()
-    local count = 0
-    for id, npc in pairs(ActiveNPCs) do
-        if DoesEntityExist(npc.ped) then
-            DeleteEntity(npc.ped)
-        end
-        ActiveNPCs[id] = nil
-        count += 1
+    -- FIX: utilise RemoveNPC() pour chaque ID afin de recycler correctement
+    -- les slots via FreeSlots (entity_pool.lua). L'ancienne version faisait
+    -- ActiveNPCs[id]=nil directement, contournant ReleaseID() → EntityIndex leak.
+    local ids = {}
+    for id in pairs(ActiveNPCs) do
+        ids[#ids + 1] = id
     end
-    print(("^3[NPC WORLD]^0 Supprimé %d NPC"):format(count))
+    for _, id in ipairs(ids) do
+        RemoveNPC(id)
+    end
+    print(("^3[NPC WORLD]^0 Supprimé %d NPC"):format(#ids))
 end, false)

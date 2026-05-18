@@ -1,37 +1,50 @@
--- Comportements spécialisés par job
+-- FIX v1.2 :
+--   • Patrol thread : accès à ActiveNPCs[npcId] sécurisé contre le nil pendant Wait()
+--     (bug : le thread vérifiait la condition PUIS faisait Wait, pendant lequel
+--      despawn_system pouvait mettre ActiveNPCs[npcId]=nil → crash au tour suivant)
 
 AddEventHandler("npc:start_patrol", function(npcId)
     local npc = ActiveNPCs[npcId]
     if not npc or not npc.routeId then return end
 
-    -- FIX (bug 8): capture the ped handle at thread creation so a later NPC
-    -- reusing the same integer ID cannot be accidentally controlled by this thread.
     local ped = npc.ped
 
     CreateThread(function()
-        while ActiveNPCs[npcId] and ActiveNPCs[npcId].ped == ped and DoesEntityExist(ped) do
-            if npc.state == "calm" then
-                local route = GetRoute(npc.routeId)
+        while true do
+            -- FIX: on récupère la référence fraîche à chaque itération AVANT tout accès.
+            -- Si le NPC a été supprimé ou recyclé pendant le Wait, on sort proprement.
+            local current = ActiveNPCs[npcId]
+            if not current or current.ped ~= ped or not DoesEntityExist(ped) then return end
+
+            if current.state == "calm" then
+                local route = GetRoute(current.routeId)
                 if route then
-                    local wp = route.waypoints[npc.waypointIndex]
+                    local wp = route.waypoints[current.waypointIndex]
                     TaskGoStraightToCoord(ped, wp.x, wp.y, wp.z, 1.0, -1, 0.0, 0.1)
 
                     local timeout = 15000
                     local start   = GetGameTimer()
                     while GetGameTimer() - start < timeout do
                         Wait(500)
-                        if not ActiveNPCs[npcId] or ActiveNPCs[npcId].ped ~= ped then return end
+                        -- FIX: re-vérification après chaque Wait interne également
+                        local c = ActiveNPCs[npcId]
+                        if not c or c.ped ~= ped then return end
                         local dist = #(GetEntityCoords(ped) - wp)
                         if dist < 2.0 then break end
-                        if npc.state ~= "calm" then break end
+                        if c.state ~= "calm" then break end
                     end
 
-                    local nextIdx = NextWaypointIndex(route, npc.waypointIndex)
+                    -- Re-vérification après la sous-boucle
+                    local c = ActiveNPCs[npcId]
+                    if not c or c.ped ~= ped then return end
+
+                    local nextIdx = NextWaypointIndex(route, c.waypointIndex)
                     if nextIdx then
-                        npc.waypointIndex = nextIdx
+                        c.waypointIndex = nextIdx
                     end
                 end
             end
+
             Wait(1000)
         end
     end)

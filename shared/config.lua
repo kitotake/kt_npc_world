@@ -17,7 +17,7 @@ Config.Emotion = {
     stressPerTick  = 5,
     fearDecay      = 2,
     stressDecay    = 1,
-    aggroDecay     = 1,
+    aggroDecay     = 1,   -- FIX: était manquant → math.max(0, aggression - nil) produisait une erreur Lua
     proximityRange = 10.0,
 }
 

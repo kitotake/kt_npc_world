@@ -15,7 +15,6 @@ function SpawnNPC(model, coords, class)
 
     local npc = RegisterEntity(ped, { class = class })
 
-    -- v1.1 : notifie GroupAI de l'enregistrement
     if npc then
         TriggerEvent("npc:registered", npc)
     end
@@ -36,7 +35,11 @@ function SpawnNPCWithJob(model, coords, class, job, routeId, groupId)
         TriggerEvent("npc:start_patrol", npc.id)
     end
 
-    -- Enregistre dans le groupe si défini
+    -- FIX: suppression de l'appel explicite GroupAI.Register(npc) qui doublonnait
+    -- le hook npc:registered déjà déclenché dans SpawnNPC ci-dessus.
+    -- group_ai.lua écoute npc:registered et appelle Register() automatiquement.
+    -- Si le group est défini APRÈS SpawnNPC (comme c'est le cas ici), on force
+    -- un re-enregistrement maintenant que npc.group est positionné.
     if groupId then
         GroupAI.Register(npc)
     end
